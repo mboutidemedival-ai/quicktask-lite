@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickTask Lite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --bg: #ffffff;
+            --surface: #f8fafc;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --complete: #10b981;
+        }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            color: var(--text);
+        }
+
+        .task-container {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .task-item {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .task-item:hover {
+            background-color: var(--surface);
+            border-left-color: var(--primary);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .checkbox-wrapper {
+            position: relative;
+            width: 20px;
+            height: 20px;
+        }
+
+        .checkbox-wrapper input {
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+            appearance: none;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-wrapper input:checked {
+            background: var(--complete);
+            border-color: var(--complete);
+        }
+
+        .checkbox-wrapper input:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn-delete {
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover .btn-delete {
+            opacity: 1;
+        }
+
+        .btn-delete {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: #ef4444;
+            transition: all 0.2s ease;
+            font-size: 18px;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-add {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-add:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-add:active {
+            transform: translateY(0);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .input-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .task-counter {
+            font-size: 13px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 16px;
+        }
+
+        .task-list {
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .task-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .task-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .task-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4">
+    <div class="max-w-md mx-auto">
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold tracking-tight mb-2">QuickTask Lite</h1>
+            <p class="text-sm text-slate-500">Organize your daily tasks effortlessly</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-12 shadow-sm border border-slate-200 overflow-hidden">
+            <!-- Input Section -->
+            <div class="p-6 border-b border-slate-200">
+                <div class="input-group">
+                    <input 
+                        type="text" 
+                        id="taskInput" 
+                        placeholder="Add a new task..." 
+                        autocomplete="off"
+                    />
+                    <button class="btn-add" id="addBtn">
+                        <span>+</span>
+                        <span>Add</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Task List Section -->
+            <div class="task-list" id="taskList">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📝</div>
+                    <p class="empty-state-text">No tasks yet. Add one to get started!</p>
+                </div>
+            </div>
+
+            <!-- Counter -->
+            <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                <div class="task-counter">
+                    <span id="taskCount">0</span> task<span id="pluralS">s</span> • 
+                    <span id="completeCount">0</span> completed
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const taskInput = document.getElementById('taskInput');
+        const addBtn = document.getElementById('addBtn');
+        const taskList = document.getElementById('taskList');
+        const taskCount = document.getElementById('taskCount');
+        const completeCount = document.getElementById('completeCount');
+        const pluralS = document.getElementById('pluralS');
+
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        function saveTasks() {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        }
+
+        function updateStats() {
+            const total = tasks.length;
+            const completed = tasks.filter(t => t.completed).length;
+
+            taskCount.textContent = total;
+            completeCount.textContent = completed;
+            pluralS.textContent = total === 1 ? '' : 's';
+        }
+
+        function renderTasks() {
+            if (tasks.length === 0) {
+                taskList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📝</div>
+                        <p class="empty-state-text">No tasks yet. Add one to get started!</p>
+                    </div>
+                `;
+                updateStats();
+                return;
+            }
+
+            taskList.innerHTML = tasks
+                .map((task, index) => `
+                    <div class="task-item ${task.completed ? 'completed' : ''} px-6 py-4 border-b border-slate-100 last:border-b-0 flex items-center gap-4">
+                        <div class="checkbox-wrapper">
+                            <input 
+                                type="checkbox" 
+                                ${task.completed ? 'checked' : ''} 
+                                onchange="toggleTask(${index})"
+                            />
+                        </div>
+                        <span class="task-text flex-1 text-sm">${escapeHtml(task.text)}</span>
+                        <button class="btn-delete" onclick="deleteTask(${index})" title="Delete task">
+                            ✕
+                        </button>
+                    </div>
+                `)
+                .join('');
+
+            updateStats();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addTask() {
+            const text = taskInput.value.trim();
+            if (text === '') return;
+
+            tasks.push({
+                text,
+                completed: false,
+                id: Date.now()
+            });
+
+            saveTasks();
+            renderTasks();
+            taskInput.value = '';
+            taskInput.focus();
+        }
+
+        function toggleTask(index) {
+            tasks[index].completed = !tasks[index].completed;
+            saveTasks();
+            renderTasks();
+        }
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            saveTasks();
+            renderTasks();
+        }
+
+        addBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        renderTasks();
+    </script>
+</body>
+</html>
